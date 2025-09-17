@@ -24,7 +24,6 @@ class OpenThermGatewayClimateThermostat : public climate::Climate, public Compon
     void set_parent(OpenThermGateway *parent) { this->parent_ = parent; }
     void set_target_temperature_constant(bool constant) { this->target_temperature_constant_ = constant; }
 
-    // 🔧 nieuw
     void set_room_temperature_source(RoomTemperatureSource src) { this->room_temp_source_ = src; }
     void set_external_room_sensor(sensor::Sensor *sensor) { this->external_room_sensor_ = sensor; }
 
@@ -35,7 +34,6 @@ class OpenThermGatewayClimateThermostat : public climate::Climate, public Compon
     void on_otmessage(const OpenThermMessage &message);
     void on_timeout();
 
-    // 🔧 nieuw
     RoomTemperatureSource room_temp_source_{RoomTemperatureSource::OTGW_THERMOSTAT};
     sensor::Sensor *external_room_sensor_{nullptr};
     float target_temperature{NAN};
