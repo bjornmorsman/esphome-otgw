@@ -8,7 +8,7 @@ from .. import otgw_ns, CONF_OTGW_ID, OpenThermGateway
 from dataclasses import dataclass
 
 DEPENDENCIES = ["otgw"]
-CODEOWNERS = ["@mvdnes"]
+CODEOWNERS = ["@bjornmorsman"]
 
 OpenThermGatewayClimateThermostat = otgw_ns.class_(
     "OpenThermGatewayClimateThermostat", climate.Climate, cg.Component
