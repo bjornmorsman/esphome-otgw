@@ -28,6 +28,17 @@ class OpenThermGatewayClimateThermostat : public climate::Climate, public Compon
   void set_room_temperature_source(RoomTemperatureSource src) { this->room_temp_source_ = src; }
   void set_external_room_sensor(sensor::Sensor *sensor) { this->external_room_sensor_ = sensor; }
 
+  void set_room_temperature_source_from_string(const std::string &src_str) {
+    if (src_str == "otgw") {
+      this->room_temp_source_ = RoomTemperatureSource::OTGW_THERMOSTAT;
+    } else if (src_str == "external") {
+      this->room_temp_source_ = RoomTemperatureSource::EXTERNAL_SENSOR;
+    } else {
+      ESP_LOGW("otgw.climate", "Unknown room_temperature_source: %s, defaulting to OTGW", src_str.c_str());
+      this->room_temp_source_ = RoomTemperatureSource::OTGW_THERMOSTAT;
+    }
+  }
+
  protected:
   OpenThermGateway *parent_;
   bool target_temperature_constant_{false};
@@ -38,5 +49,6 @@ class OpenThermGatewayClimateThermostat : public climate::Climate, public Compon
   void on_otmessage(const OpenThermMessage &message);
   void on_timeout();
 };
+
 }  // namespace otgw
 }  // namespace esphome
