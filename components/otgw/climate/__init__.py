@@ -1,14 +1,8 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import climate, sensor
-from esphome.const import (
-    CONF_ID,
-)
+from esphome.const import CONF_ID
 from .. import otgw_ns, CONF_OTGW_ID, OpenThermGateway
-from dataclasses import dataclass
-
-DEPENDENCIES = ["otgw"]
-CODEOWNERS = ["@bjornmorsman"]
 
 OpenThermGatewayClimateThermostat = otgw_ns.class_(
     "OpenThermGatewayClimateThermostat", climate.Climate, cg.Component
