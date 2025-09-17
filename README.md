@@ -10,7 +10,7 @@ For other sensors, only a subset of OTGW messages are parsed. New sensors can be
 
 ```yaml
 external_components:
-  - source: github://mvdnes/esphome-otgw
+  - source: github://bjornmorsman/esphome-otgw
 
 uart:
   # Serial for OTGW PIC
