@@ -1,4 +1,5 @@
 #include "climate.h"
+#include "esphome/core/log.h"
 
 namespace esphome {
 namespace otgw {
@@ -35,7 +36,7 @@ void OpenThermGatewayClimateThermostat::dump_config() {
   } else {
     ESP_LOGCONFIG(TAG, "  Room temperature source: External sensor");
     if (this->external_room_sensor_ != nullptr) {
-      ESP_LOGCONFIG(TAG, "    External room sensor is set");
+      ESP_LOGCONFIG(TAG, "    External room sensor is set (state: %.2f)", this->external_room_sensor_->state);
     }
   }
 }
@@ -48,7 +49,7 @@ void OpenThermGatewayClimateThermostat::control(const climate::ClimateCall& call
   }
 }
 
-// 🔹 Nieuw: loop() voor externe sensor
+// 🔹 loop() voor externe sensor
 void OpenThermGatewayClimateThermostat::loop() {
   if (this->room_temp_source_ == RoomTemperatureSource::EXTERNAL_SENSOR &&
       this->external_room_sensor_ != nullptr) {
@@ -84,7 +85,6 @@ void OpenThermGatewayClimateThermostat::on_otmessage(const OpenThermMessage &mes
       break;
 
     case DATA_ID_ROOM_TEMPERATURE:
-      // Alleen bij OTGW als bron
       if (this->room_temp_source_ == RoomTemperatureSource::OTGW_THERMOSTAT) {
         this->current_temperature = message.value_f88;
       }
@@ -96,7 +96,6 @@ void OpenThermGatewayClimateThermostat::on_otmessage(const OpenThermMessage &mes
 void OpenThermGatewayClimateThermostat::on_timeout() {
   this->target_temperature = NaN;
 
-  // Alleen resetten als bron = OTGW
   if (this->room_temp_source_ == RoomTemperatureSource::OTGW_THERMOSTAT) {
     this->current_temperature = NaN;
   }
@@ -118,6 +117,17 @@ climate::ClimateTraits OpenThermGatewayClimateThermostat::traits() {
   traits.set_visual_target_temperature_step(0.5);
 
   return traits;
+}
+
+// 🔹 YAML-codegen binding functies
+void otgw_climate_set_room_temperature_source(OpenThermGatewayClimateThermostat *climate,
+                                             const std::string &source) {
+  climate->set_room_temperature_source_from_string(source);
+}
+
+void otgw_climate_set_external_room_sensor(OpenThermGatewayClimateThermostat *climate,
+                                           sensor::Sensor *sensor) {
+  climate->set_external_room_sensor(sensor);
 }
 
 }  // namespace otgw
