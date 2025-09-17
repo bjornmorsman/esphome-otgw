@@ -65,7 +65,9 @@ void OpenThermGatewayClimateThermostat::on_otmessage(const OpenThermMessage &mes
             this->target_temperature = message.value_f88;
             break;
         case DATA_ID_ROOM_TEMPERATURE:
-            if (!this->external_sensor_) {
+            if (this->external_sensor_) {
+                this->current_temperature = this->external_sensor_->state;
+            } else {
                 this->current_temperature = message.value_f88;
             }
             break;
