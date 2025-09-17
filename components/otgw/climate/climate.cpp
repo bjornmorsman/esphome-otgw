@@ -17,7 +17,11 @@ void OpenThermGatewayClimateThermostat::setup() {
     auto listener = [this](const OpenThermMessage &message) { this->on_otmessage(message); };
     this->parent_->register_listener(DATA_ID_STATUS, listener);
     this->parent_->register_listener(DATA_ID_ROOM_SETPOINT, listener);
-    this->parent_->register_listener(DATA_ID_ROOM_TEMPERATURE, listener);
+
+    // Alleen luisteren naar thermostaat als bron == OTGW
+    if (this->room_temp_source_ == RoomTemperatureSource::OTGW_THERMOSTAT) {
+        this->parent_->register_listener(DATA_ID_ROOM_TEMPERATURE, listener);
+    }
 
     this->parent_->register_timeout_listener([this]() { this->on_timeout(); });
 }
@@ -26,9 +30,17 @@ void OpenThermGatewayClimateThermostat::dump_config() {
     LOG_CLIMATE("", "OpenTherm Gateway Climate", this);
     if (this->target_temperature_constant_) {
         ESP_LOGCONFIG(TAG, "  Target Temperature is set Constant");
-    }
-    else {
+    } else {
         ESP_LOGCONFIG(TAG, "  Target Temperature is set Temporary");
+    }
+
+    if (this->room_temp_source_ == RoomTemperatureSource::OTGW_THERMOSTAT) {
+        ESP_LOGCONFIG(TAG, "  Room temperature source: OTGW Thermostat");
+    } else {
+        ESP_LOGCONFIG(TAG, "  Room temperature source: External sensor");
+        if (this->external_room_sensor_ == nullptr) {
+            ESP_LOGCONFIG(TAG, "    (no external sensor configured!)");
+        }
     }
 }
 
@@ -42,31 +54,31 @@ void OpenThermGatewayClimateThermostat::control(const climate::ClimateCall& call
 
 void OpenThermGatewayClimateThermostat::on_otmessage(const OpenThermMessage &message) {
     switch (message.data_id) {
-        case DATA_ID_STATUS:
-            {
-                bool ch1_active = (message.value_u16 >> 1) & 1;
-                bool ch2_active = (message.value_u16 >> 5) & 1;
-                bool cooling_active = (message.value_u16 >> 4) & 1;
+        case DATA_ID_STATUS: {
+            bool ch1_active = (message.value_u16 >> 1) & 1;
+            bool ch2_active = (message.value_u16 >> 5) & 1;
+            bool cooling_active = (message.value_u16 >> 4) & 1;
 
-                if (ch1_active || ch2_active) {
-                    this->mode = climate::CLIMATE_MODE_HEAT;
-                    this->action = climate::CLIMATE_ACTION_HEATING;
-                }
-                else if (cooling_active) {
-                    this->mode = climate::CLIMATE_MODE_COOL;
-                    this->action = climate::CLIMATE_ACTION_COOLING;
-                }
-                else {
-                    this->mode = climate::CLIMATE_MODE_HEAT;
-                    this->action = climate::CLIMATE_ACTION_IDLE;
-                }
+            if (ch1_active || ch2_active) {
+                this->mode = climate::CLIMATE_MODE_HEAT;
+                this->action = climate::CLIMATE_ACTION_HEATING;
+            } else if (cooling_active) {
+                this->mode = climate::CLIMATE_MODE_COOL;
+                this->action = climate::CLIMATE_ACTION_COOLING;
+            } else {
+                this->mode = climate::CLIMATE_MODE_HEAT;
+                this->action = climate::CLIMATE_ACTION_IDLE;
             }
             break;
+        }
         case DATA_ID_ROOM_SETPOINT:
             this->target_temperature = message.value_f88;
             break;
         case DATA_ID_ROOM_TEMPERATURE:
-            this->current_temperature = message.value_f88;
+            // Alleen bij OTGW als bron
+            if (this->room_temp_source_ == RoomTemperatureSource::OTGW_THERMOSTAT) {
+                this->current_temperature = message.value_f88;
+            }
             break;
     }
     this->publish_state();
@@ -74,10 +86,27 @@ void OpenThermGatewayClimateThermostat::on_otmessage(const OpenThermMessage &mes
 
 void OpenThermGatewayClimateThermostat::on_timeout() {
     this->target_temperature = NaN;
-    this->current_temperature = NaN;
+
+    // Bij externe sensor houden we de waarde, alleen OTGW resetten
+    if (this->room_temp_source_ == RoomTemperatureSource::OTGW_THERMOSTAT) {
+        this->current_temperature = NaN;
+    }
+
     this->mode = climate::CLIMATE_MODE_OFF;
     this->action = climate::CLIMATE_ACTION_OFF;
     this->publish_state();
+}
+
+// 🔧 Nieuw: loop() voor externe sensor
+void OpenThermGatewayClimateThermostat::loop() {
+    if (this->room_temp_source_ == RoomTemperatureSource::EXTERNAL_SENSOR &&
+        this->external_room_sensor_ != nullptr) {
+        float temp = this->external_room_sensor_->state;
+        if (!isnan(temp)) {
+            this->current_temperature = temp;
+            this->publish_state();
+        }
+    }
 }
 
 climate::ClimateTraits OpenThermGatewayClimateThermostat::traits() {
@@ -94,5 +123,5 @@ climate::ClimateTraits OpenThermGatewayClimateThermostat::traits() {
     return traits;
 }
 
-} // namespace otgw
-} // namespace esphome
+}  // namespace otgw
+}  // namespace esphome
