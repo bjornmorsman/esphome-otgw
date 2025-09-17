@@ -28,5 +28,5 @@ protected:
     void on_timeout();
 };
 
-} // namespace otgw
-} // namespace esphome
+}  // namespace otgw
+}  // namespace esphome
