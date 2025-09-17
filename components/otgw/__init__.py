@@ -1,13 +1,12 @@
 import esphome.config_validation as cv
 import esphome.codegen as cg
-
-from esphome.components import uart, sensor
+from esphome.components import uart
 
 from esphome.const import CONF_ID
 
 CODEOWNERS = ["@mvdnes"]
 DEPENDENCIES = ["uart"]
-AUTO_LOAD = ["sensor", "text_sensor"]
+AUTO_LOAD = ["sensor", "text_sensor", "climate"]  # include submodules
 
 otgw_ns = cg.esphome_ns.namespace("otgw")
 OpenThermGateway = otgw_ns.class_("OpenThermGateway", uart.UARTDevice, cg.Component)
@@ -34,9 +33,10 @@ FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
     require_tx=True,
 )
 
+# Import submodules
+from . import climate
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-
     await cg.register_component(var, config)
     await uart.register_uart_device(var, config)
