@@ -73,11 +73,6 @@ void OpenThermGatewayClimateThermostat::on_otmessage(const OpenThermMessage &mes
             break;
     }
 
-    // override with external sensor if configured
-    if (this->external_sensor_) {
-        this->current_temperature = this->external_sensor_->state;
-    }
-
     this->publish_state();
 }
 
