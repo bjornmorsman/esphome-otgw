@@ -20,8 +20,8 @@ public:
     void set_external_sensor(sensor::Sensor *sensor) { this->external_sensor_ = sensor; }
 
 protected:
-    OpenThermGateway *parent_;
-    bool target_temperature_constant_;
+    OpenThermGateway *parent_{nullptr};
+    bool target_temperature_constant_{false};
     sensor::Sensor *external_sensor_{nullptr};
 
     void on_otmessage(const OpenThermMessage &message);
